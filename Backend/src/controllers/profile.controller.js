@@ -32,30 +32,81 @@ res.status(500).json({
 }
 
 export const actualizarPerfil = async (req, res) => {
-  try{
-    const actualizarPerfilResult = await profileService.actualizarPerfil();
-    res.json(actualizarPerfilResult);
+  try {
 
-  }catch(error){
-    console.error(error);
-    res.status(500).json({
-      mensaje:"Error al actualizar el perfil"
+    const { id } = req.params;
+    const datos = req.body;
+    
+    if (!datos) {
+      return res.status(400).json({
+        message: "No se recibieron datos."
+      });
+    }
+
+    const filasAfectadas = await profileService.actualizarPerfil(id, datos);
+
+    console.log("Filas afectadas:", filasAfectadas);
+
+    if (filasAfectadas === 0) {
+      return res.status(404).json({
+        message: "Usuario no encontrado o no se realizaron cambios."
+      });
+    }
+
+    const perfilActualizado = await profileService.obtenerPerfil(id);
+
+    return res.status(200).json({
+      message: "Perfil actualizado correctamente",
+      data: perfilActualizado
     });
-  }
-}
 
+  } catch (error) {
+
+    console.error("Error al actualizar perfil:", error);
+
+    return res.status(500).json({
+      message: "Error al actualizar el perfil",
+      error: error.message
+    });
+
+  }
+};
 export const actualizarFoto = async (req, res) => {
-  try{
-    const actualizarFotoResult = await profileService.actualizarFoto();
-    res.json(actualizarFotoResult);
+  try {
 
-  }catch(error){
-    console.error(error);
-    res.status(500).json({
-      mensaje:"Error al actualizar la foto de perfil"
+    const { id } = req.params;
+
+    if (!req.file) {
+      return res.status(400).json({
+        message: "No se recibió ninguna imagen."
+      });
+    }
+
+    const ruta = `/uploads/profiles/${req.file.filename}`;
+
+    const filasAfectadas = await profileService.actualizarFoto(id, ruta);
+
+    if (filasAfectadas === 0) {
+      return res.status(404).json({
+        message: "Usuario no encontrado."
+      });
+    }
+
+    res.status(200).json({
+      message: "Foto actualizada correctamente",
+      fotoPerfil: ruta
     });
+
+  } catch (error) {
+
+    console.error(error);
+
+    res.status(500).json({
+      message: "Error al actualizar la foto de perfil"
+    });
+
   }
-}
+};
 
 export const cambiarContrasena = async (req, res) => {
   try{

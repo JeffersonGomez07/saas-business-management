@@ -84,6 +84,8 @@ export default function Configuracion() {
 
   if (!infoPerfil) return;
 
+  console.log("Datos enviados:", infoPerfil);
+
   try {
 
     const res = await fetch(
@@ -97,15 +99,21 @@ export default function Configuracion() {
       }
     );
 
+    const data = await res.json();
+
+    console.log(data);
+
     if (!res.ok) {
-      throw new Error("Error al actualizar");
+      throw new Error(data.message);
     }
+
+    setInfoPerfil(data.data);
+
+    toast.success(data.message);
 
     if (foto) {
     await subirFoto();
 }
-
-    toast.success("Perfil actualizado correctamente");
 
   } catch (error) {
 
@@ -126,6 +134,8 @@ const [preview, setPreview] = useState("");
 const subirFoto = async () => {
 
     if(!foto) return;
+
+    console.log("Subiendo foto:", foto);
 
     const formData = new FormData();
 
