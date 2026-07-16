@@ -254,12 +254,6 @@ Main entities include:
 
 ---
 
-# License
-
-This project was developed for educational purposes and as part of a professional software development portfolio.
-
----
-
 # Author
 
 **Jefferson Gómez**
