@@ -209,9 +209,11 @@ If a credential was previously committed, rotate it; ignoring `.env` does not re
 
 The application uses Microsoft SQL Server. For a new installation, run `Script/schema.sql`. To upgrade an existing installation, first back up the database and run `Script/migrate-multiempresa.sql`.
 
-The migration creates a separate company for each existing user to avoid merging accounts based on possibly duplicated `company_name` values. If multiple users should share a tenant, review and reassign their `company_id` values explicitly. Legacy customers, products, sales, sale details, categories and suppliers have no reliable ownership information, so they remain unassigned (`company_id IS NULL`) and are intentionally hidden from tenant-scoped API responses. Review and assign those records to the correct company before making them available. Do not assign historical data to a tenant unless that ownership is confirmed.
+The migration creates a separate company for each existing user to avoid merging accounts based on possibly duplicated `company_name` values. If multiple users should share a tenant, review and reassign their `company_id` values explicitly. The first run creates `dbo.LegacyCompanyAssignments` and the nullable columns, then stops safely if ownership mappings are missing. Add one mapping for every existing `Categorias`, `Clientes`, `Proveedores`, `Productos` and `Ventas` row using its table name, primary-key ID and confirmed company ID; rerun the script to apply the assignments transactionally. It derives sale details from their sale and notifications from their user, verifies every row, and adds tenant-consistent foreign keys. Use the final ownership-count query to audit the result. Never infer ownership without confirmation. For example, after confirming the owner, add a mapping with `INSERT dbo.LegacyCompanyAssignments (entity_name, record_id, company_id) VALUES ('Clientes', 42, 1);`.
 
 New registrations create a company, a default `General` category, and user preferences. Each private API request requires a valid bearer JWT; company and user identity are taken from the verified token.
+
+Backend tests: run `npm test` from `Backend`. The SQL integration test is skipped unless `RUN_SQL_INTEGRATION_TESTS=1` and `DB_DATABASE=SaaS_Test`; restore or create that disposable database with the application schema first. The integration test exercises registration/login, customers, inventory, sales, reports, and cross-company access, then removes only the two companies and records it created.
 
 Main entities include:
 
