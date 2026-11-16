@@ -5,7 +5,7 @@ export const obtenerClientes = async (req,res)=>{
 
     try{
 
-        const clientes = await clienteService.obtenerClientes();
+        const clientes = await clienteService.obtenerClientes(req.user.companyId);
 
         res.json(clientes);
 
@@ -26,7 +26,7 @@ export const listadoClientes = async (req,res)=>{
 
     try{
 
-        const clientes = await clienteService.listadoClientes();
+        const clientes = await clienteService.listadoClientes(req.user.companyId);
 
         res.json({
             clientes
@@ -50,7 +50,7 @@ export const crearCliente = async(req,res)=>{
 
     try{
 
-        const cliente = await clienteService.crearCliente(req.body);
+        const cliente = await clienteService.crearCliente(req.body, req.user.companyId);
 
 
         res.status(201).json({

@@ -9,7 +9,8 @@ export const obtenerReportes = async (req, res) => {
 
     const resultado = await reportesService.obtenerReportes(
       desde,
-      hasta
+      hasta,
+      req.user.companyId
     );
 
     res.json(resultado);
@@ -34,7 +35,8 @@ export const analisisFinanciero = async (req, res) => {
 
     const resultado = await reportesService.analisisFinanciero(
       desde,
-      hasta
+      hasta,
+      req.user.companyId
     );
 
     res.json(resultado);
@@ -60,7 +62,8 @@ export const ventasPorCategoria = async (req, res) => {
 
     const resultado = await reportesService.ventasPorCategoria(
       desde,
-      hasta
+      hasta,
+      req.user.companyId
     );
 
     res.json(resultado);
@@ -83,7 +86,8 @@ export const topProductosVendidos = async (req, res) => {
 
     const resultado = await reportesService.topProductosVendidos(
       desde,
-      hasta
+      hasta,
+      req.user.companyId
     );
 
     res.json(resultado);
@@ -108,7 +112,8 @@ export const exportarPDF = async(req,res)=>{
 
     const reporte = await reportesService.obtenerReportes(
       desde,
-      hasta
+      hasta,
+      req.user.companyId
     );
 
 

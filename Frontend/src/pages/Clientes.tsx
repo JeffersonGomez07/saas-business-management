@@ -7,6 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from ".
 import {Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger} from "../components/ui/dialog";
 import { Label } from "../components/ui/label";
 import { Plus, Search, Mail, Phone, MapPin, Eye } from "lucide-react";
+import { apiFetch } from "../service/api";
 
 type ClienteResumen = {
   totalClientes: number;
@@ -46,7 +47,7 @@ const [clienteSeleccionado, setClienteSeleccionado] = useState<listadoCliente | 
 const [openDetalle, setOpenDetalle] = useState(false);
 const agregarCliente = async () => {
   try {
-    const response = await fetch("http://localhost:4000/api/clientes/crear", {
+    const response = await apiFetch("http://localhost:4000/api/clientes/crear", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -72,10 +73,10 @@ const agregarCliente = async () => {
     });
 
     // Volver a cargar la lista
-    const listadoRes = await fetch("http://localhost:4000/api/clientes/listado");
+    const listadoRes = await apiFetch("http://localhost:4000/api/clientes/listado");
     const listado = await listadoRes.json();
 
-    const resumenRes = await fetch("http://localhost:4000/api/clientes");
+    const resumenRes = await apiFetch("http://localhost:4000/api/clientes");
     const resumen = await resumenRes.json();
 
     setListadoClientes(listado.clientes);
@@ -90,8 +91,8 @@ useEffect(() => {
   const cargarDatos = async () => {
     try {
       const [resumenRes, listadoRes] = await Promise.all([
-        fetch("http://localhost:4000/api/clientes"),
-        fetch("http://localhost:4000/api/clientes/listado"),
+        apiFetch("http://localhost:4000/api/clientes"),
+        apiFetch("http://localhost:4000/api/clientes/listado"),
       ]);
 
       const resumen = await resumenRes.json();

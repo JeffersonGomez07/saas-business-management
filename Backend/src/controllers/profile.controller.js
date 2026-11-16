@@ -4,7 +4,7 @@ export const obtenerPerfil = async(req,res)=>{
 
 try{
 
-const {id}=req.params;
+const id = req.user.id;
 
 const perfil = await profileService.obtenerPerfil(id);
 
@@ -34,7 +34,7 @@ res.status(500).json({
 export const actualizarPerfil = async (req, res) => {
   try {
 
-    const { id } = req.params;
+    const id = req.user.id;
     const datos = req.body;
     
     if (!datos) {
@@ -74,7 +74,7 @@ export const actualizarPerfil = async (req, res) => {
 export const actualizarFoto = async (req, res) => {
   try {
 
-    const { id } = req.params;
+    const id = req.user.id;
 
     if (!req.file) {
       return res.status(400).json({
@@ -110,8 +110,11 @@ export const actualizarFoto = async (req, res) => {
 
 export const cambiarContrasena = async (req, res) => {
   try{
-    const cambiarContrasenaResult = await profileService.cambiarContrasena();
-    res.json(cambiarContrasenaResult);
+    const { passwordActual, passwordNueva } = req.body;
+    const result = await profileService.cambiarContrasena(req.user.id, passwordActual, passwordNueva);
+    if (result === null) return res.status(404).json({ message: "Usuario no encontrado" });
+    if (!result) return res.status(400).json({ message: "La contraseña actual es incorrecta" });
+    res.json({ message: "Contraseña actualizada correctamente" });
 
   }catch(error){
     console.error(error);
@@ -123,7 +126,7 @@ export const cambiarContrasena = async (req, res) => {
 
 export const obtenerPreferencias = async (req, res) => {
   try{
-    const obtenerPreferenciasResult = await profileService.obtenerPreferencias();
+    const obtenerPreferenciasResult = await profileService.obtenerPreferencias(req.user.id);
     res.json(obtenerPreferenciasResult);
 
   }catch(error){
@@ -136,7 +139,7 @@ export const obtenerPreferencias = async (req, res) => {
 
 export const actualizarPreferencias = async (req, res) => {
   try{
-    const actualizarPreferenciasResult = await profileService.actualizarPreferencias();
+    const actualizarPreferenciasResult = await profileService.actualizarPreferencias(req.user.id, req.body);
     res.json(actualizarPreferenciasResult);
 
   }catch(error){
@@ -149,7 +152,7 @@ export const actualizarPreferencias = async (req, res) => {
 
 export const obtenerApariencia = async (req, res) => {
   try{
-    const obtenerAparienciaResult = await profileService.obtenerApariencia();
+    const obtenerAparienciaResult = await profileService.obtenerApariencia(req.user.id);
     res.json(obtenerAparienciaResult);
 
   }catch(error){
@@ -162,7 +165,7 @@ export const obtenerApariencia = async (req, res) => {
 
 export const actualizarApariencia = async (req, res) => {
   try{
-    const actualizarAparienciaResult = await profileService.actualizarApariencia();
+    const actualizarAparienciaResult = await profileService.actualizarApariencia(req.user.id, req.body);
     res.json(actualizarAparienciaResult);
 
   }catch(error){

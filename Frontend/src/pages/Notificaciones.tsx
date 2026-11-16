@@ -4,7 +4,7 @@ import { Badge } from "../components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
 import { ShoppingCart, Users, AlertTriangle, CheckCircle, Info, X, type LucideIcon } from "lucide-react";
 import { useEffect, useState, useCallback } from "react";
-import axios from "axios";
+import api from "../service/api";
 export type NotificacionApi = {
   Id: number;
   Titulo: string;
@@ -26,8 +26,6 @@ export default function Notificaciones() {
 
 const [notificaciones, setNotificaciones] = useState<Notificacion[]>([]);
 const [loading, setLoading] = useState(true);
-
- const userId = 1;
 
   const adaptarNotificaciones = (
     data: NotificacionApi[]
@@ -71,9 +69,7 @@ const obtenerNotificaciones = useCallback(async () => {
 
   try {
 
-    const response = await axios.get<NotificacionApi[]>(
-      `http://localhost:4000/api/notificaciones/${userId}`
-    );
+    const response = await api.get<NotificacionApi[]>("/api/notificaciones/me");
 
     const adaptadas =
       adaptarNotificaciones(response.data);
@@ -92,7 +88,7 @@ const obtenerNotificaciones = useCallback(async () => {
     setLoading(false);
   }
 
-}, [userId]);
+}, []);
 
   useEffect(() => {
     obtenerNotificaciones();
@@ -102,9 +98,7 @@ const obtenerNotificaciones = useCallback(async () => {
 
     try {
 
-      await axios.patch(
-        `http://localhost:4000/api/notificaciones/${userId}/read-all`
-      );
+      await api.patch("/api/notificaciones/me/read-all");
 
 
       setNotificaciones((prev) =>
@@ -131,9 +125,7 @@ const obtenerNotificaciones = useCallback(async () => {
 
     try {
 
-      await axios.delete(
-        `http://localhost:4000/api/notificaciones/user/${userId}`
-      );
+      await api.delete("/api/notificaciones/user/me");
 
 
       setNotificaciones([]);
@@ -156,9 +148,7 @@ const obtenerNotificaciones = useCallback(async () => {
 
     try {
 
-      await axios.delete(
-        `http://localhost:4000/api/notificaciones/${id}`
-      );
+      await api.delete(`/api/notificaciones/${id}`);
 
 
       setNotificaciones((prev)=>

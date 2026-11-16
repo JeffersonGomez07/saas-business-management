@@ -2,20 +2,21 @@ import pool from "../config/db.js";
 import sql from "mssql";
 import { validarCliente  } from "../validators/cliente.validator.js";
 
-export const obtenerClientes = async () => {
-  const clientes = await pool.request().query(`
+export const obtenerClientes = async (companyId) => {
+  const clientes = await pool.request().input("companyId", sql.Int, companyId).query(`
     SELECT
       COUNT(DISTINCT ClienteId) AS totalClientes,
       SUM(Total) AS ingresosTotales,
       ROUND(SUM(Total) / COUNT(DISTINCT ClienteId), 2) AS promedioPorCliente
-    FROM Ventas;
+    FROM Ventas
+    WHERE company_id = @companyId;
   `);
 
   return clientes.recordset[0];
 };
 
-export const listadoClientes = async () => {
-  const clientes = await pool.request().query(`
+export const listadoClientes = async (companyId) => {
+  const clientes = await pool.request().input("companyId", sql.Int, companyId).query(`
     SELECT
       c.id,
       c.nombre,
@@ -27,7 +28,8 @@ export const listadoClientes = async () => {
       MAX(v.Fecha) AS ultimaCompra
     FROM Clientes c
     LEFT JOIN Ventas v
-      ON c.Id = v.ClienteId
+      ON c.Id = v.ClienteId AND v.company_id = @companyId
+    WHERE c.company_id = @companyId
     GROUP BY
       c.Id,
       c.Nombre,
@@ -39,7 +41,7 @@ export const listadoClientes = async () => {
   return clientes.recordset;
 };
 
-export const crearCliente = async (datos) => {
+export const crearCliente = async (datos, companyId) => {
   
   validarCliente(datos);
 
@@ -49,10 +51,11 @@ export const crearCliente = async (datos) => {
   if (correo) {
     const existe = await pool.request()
       .input("correo", sql.NVarChar(100), correo)
+      .input("companyId", sql.Int, companyId)
       .query(`
         SELECT Id
         FROM Clientes
-        WHERE Correo = @correo
+        WHERE Correo = @correo AND company_id = @companyId
       `);
 
     if (existe.recordset.length > 0) {
@@ -65,13 +68,15 @@ export const crearCliente = async (datos) => {
     .input("correo", sql.NVarChar(100), correo || null)
     .input("telefono", sql.NVarChar(20), telefono || null)
     .input("direccion", sql.VarChar(255), direccion || null)
+    .input("companyId", sql.Int, companyId)
     .query(`
       INSERT INTO Clientes
       (
         Nombre,
         Correo,
         Telefono,
-        direccion
+        direccion,
+        company_id
       )
       OUTPUT INSERTED.*
       VALUES
@@ -79,7 +84,8 @@ export const crearCliente = async (datos) => {
         @nombre,
         @correo,
         @telefono,
-        @direccion
+        @direccion,
+        @companyId
       )
     `);
 

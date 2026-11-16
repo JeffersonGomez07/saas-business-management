@@ -2,26 +2,28 @@ import pool from "../config/db.js";
 import sql from "mssql";
 import { validarProducto } from "../validators/inventario.validator.js";
 
-export const obtenerInventario = async () => {
+export const obtenerInventario = async (companyId) => {
   
-    const result = await pool.request().query(`
+    const result = await pool.request().input("companyId", sql.Int, companyId).query(`
       SELECT
           COUNT(*) AS totalProductos,
           SUM(Stock * Precio) AS valorInventario,
           SUM(CASE WHEN Stock <= 5 THEN 1 ELSE 0 END) AS productosBajoStock
-      FROM Productos;
+      FROM Productos
+      WHERE company_id = @companyId;
     `);
 
     return result.recordset[0];
 
 };
 
-export const listadoProductos = async () => {
-      const result = await pool.request().query(`
+export const listadoProductos = async (companyId) => {
+      const result = await pool.request().input("companyId", sql.Int, companyId).query(`
           SELECT
               p.Id,
               p.Nombre AS Producto,
               p.SKU,
+              p.ProveedorId,
               c.Nombre AS Categoria,
               p.Stock,
               p.MinStock,
@@ -30,10 +32,10 @@ export const listadoProductos = async () => {
               p.Estado
               FROM Productos p
               INNER JOIN Categorias c
-              ON p.IdCategoria = c.Id
-              INNER JOIN Proveedores pr
-              ON p.ProveedorId = pr.Id
-              WHERE p.Activo = 1
+              ON p.IdCategoria = c.Id AND c.company_id = @companyId
+              LEFT JOIN Proveedores pr
+              ON p.ProveedorId = pr.Id AND pr.company_id = @companyId
+              WHERE p.Activo = 1 AND p.company_id = @companyId
               ORDER BY p.Nombre;
       `);
 
@@ -41,12 +43,13 @@ export const listadoProductos = async () => {
 
 };
 
-export const obtenerCategorias = async () => {
-    const result = await pool.request().query(`
+export const obtenerCategorias = async (companyId) => {
+    const result = await pool.request().input("companyId", sql.Int, companyId).query(`
       SELECT
         Id AS id,
         Nombre AS nombre
       FROM Categorias
+      WHERE company_id = @companyId
       ORDER BY Nombre
     `);
 
@@ -54,16 +57,17 @@ export const obtenerCategorias = async () => {
 
 };
 
-export const eliminarProducto = async(id)=>{
+export const eliminarProducto = async(id, companyId)=>{
 
     const result = await pool.request()
       .input("id", id)
+      .input("companyId", sql.Int, companyId)
       .query(`
         UPDATE Productos
         SET
           Activo = 0,
           FechaActualizacion = GETDATE()
-        WHERE Id=@id
+        WHERE Id=@id AND company_id=@companyId
       `);
 
 
@@ -80,32 +84,68 @@ export const eliminarProducto = async(id)=>{
 
 };
 
-export const actualizarProducto = async(id, datos)=>{
+export const actualizarProducto = async(id, datos, companyId)=>{
 
 
     const {
         nombre,
+        sku,
+        categoria,
+        proveedor,
         precio,
-        stock
+        stock,
+        minStock
     } = datos;
 
+    const categoriaResult = await pool.request()
+      .input("categoria", sql.VarChar, categoria)
+      .input("companyId", sql.Int, companyId)
+      .query("SELECT Id FROM Categorias WHERE Nombre=@categoria AND company_id=@companyId");
+    if (!categoriaResult.recordset.length) {
+        throw new Error("La categoría no existe");
+    }
 
-    await pool.request()
+    let proveedorId = null;
+    if (proveedor) {
+        const proveedorResult = await pool.request()
+          .input("proveedorId", sql.Int, proveedor)
+          .input("companyId", sql.Int, companyId)
+          .query("SELECT Id FROM Proveedores WHERE Id=@proveedorId AND company_id=@companyId");
+        if (!proveedorResult.recordset.length) {
+            throw new Error("El proveedor no existe");
+        }
+        proveedorId = proveedorResult.recordset[0].Id;
+    }
+
+    const result = await pool.request()
 
     .input("id",id)
     .input("nombre",nombre)
+    .input("sku", sql.VarChar(50), sku || null)
+    .input("categoriaId", sql.Int, categoriaResult.recordset[0].Id)
+    .input("proveedorId", sql.Int, proveedorId)
     .input("precio",precio)
     .input("stock",stock)
+    .input("minStock", sql.Int, minStock)
+    .input("companyId", sql.Int, companyId)
 
     .query(`
         UPDATE Productos
         SET
             Nombre=@nombre,
+            SKU=@sku,
+            idCategoria=@categoriaId,
+            ProveedorId=@proveedorId,
             Precio=@precio,
             Stock=@stock,
+            MinStock=@minStock,
             FechaActualizacion=GETDATE()
-        WHERE Id=@id
+        WHERE Id=@id AND company_id=@companyId
     `);
+
+    if (result.rowsAffected[0] === 0) {
+        throw new Error("Producto no encontrado");
+    }
 
 
     return {
@@ -114,7 +154,7 @@ export const actualizarProducto = async(id, datos)=>{
 
 };
 
-export const agregarProducto = async(datos)=>{
+export const agregarProducto = async(datos, companyId)=>{
   try {
 
     validarProducto(datos);
@@ -132,10 +172,11 @@ export const agregarProducto = async(datos)=>{
     // Buscar id de categoría
     const categoriaResult = await pool.request()
       .input("Categoria", sql.VarChar, categoria)
+      .input("companyId", sql.Int, companyId)
       .query(`
         SELECT id 
         FROM Categorias
-        WHERE nombre = @Categoria
+        WHERE nombre = @Categoria AND company_id = @companyId
       `);
 
 
@@ -148,19 +189,21 @@ export const agregarProducto = async(datos)=>{
 
 
     // Buscar proveedor
-    const proveedorResult = await pool.request()
-      .input("Proveedor", sql.VarChar, proveedor)
-      .query(`
-        SELECT Id
-        FROM Proveedores
-        WHERE Nombre = @Proveedor
-      `);
-
-
-
     let proveedorId = null;
 
-    if(proveedorResult.recordset.length > 0){
+    if (proveedor) {
+      const proveedorResult = await pool.request()
+        .input("Proveedor", sql.Int, proveedor)
+        .input("companyId", sql.Int, companyId)
+        .query(`
+          SELECT Id
+          FROM Proveedores
+          WHERE Id = @Proveedor AND company_id = @companyId
+        `);
+
+      if (!proveedorResult.recordset.length) {
+        throw new Error("El proveedor no existe");
+      }
       proveedorId = proveedorResult.recordset[0].Id;
     }
 
@@ -174,6 +217,7 @@ export const agregarProducto = async(datos)=>{
       .input("SKU", sql.VarChar, sku)
       .input("ProveedorId", sql.Int, proveedorId)
       .input("MinStock", sql.Int, minStock)
+      .input("companyId", sql.Int, companyId)
       .query(`
         INSERT INTO Productos
         (
@@ -183,7 +227,8 @@ export const agregarProducto = async(datos)=>{
           idCategoria,
           SKU,
           ProveedorId,
-          MinStock
+          MinStock,
+          company_id
         )
         VALUES
         (
@@ -193,7 +238,8 @@ export const agregarProducto = async(datos)=>{
           @CategoriaId,
           @SKU,
           @ProveedorId,
-          @MinStock
+          @MinStock,
+          @companyId
         )
       `);
 
@@ -213,13 +259,14 @@ export const agregarProducto = async(datos)=>{
   }
 }
 
-export const obtenerProveedores = async()=>{
+export const obtenerProveedores = async(companyId)=>{
 
-    const result = await pool.request().query(`
+    const result = await pool.request().input("companyId", sql.Int, companyId).query(`
       SELECT
         Id,
         Nombre
       FROM Proveedores
+      WHERE company_id = @companyId
       ORDER BY Nombre
     `);
 

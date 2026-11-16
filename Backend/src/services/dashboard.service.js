@@ -1,28 +1,29 @@
 import pool from "../config/db.js";
+import sql from "mssql";
 
 
-export const obtenerResumen = async () => {
+export const obtenerResumen = async (companyId) => {
 
-    const ventas = await pool.request().query(`
+    const ventas = await pool.request().input("companyId", sql.Int, companyId).query(`
         SELECT ISNULL(SUM(Total),0) AS totalVentas
         FROM Ventas
         WHERE MONTH(fecha)=MONTH(GETDATE())
-        AND YEAR(fecha)=YEAR(GETDATE())
+        AND YEAR(fecha)=YEAR(GETDATE()) AND company_id=@companyId
     `);
 
-    const pedidos = await pool.request().query(`
+    const pedidos = await pool.request().input("companyId", sql.Int, companyId).query(`
         SELECT COUNT(*) AS pedidos
-        FROM Ventas
+        FROM Ventas WHERE company_id=@companyId
     `);
 
-    const productos = await pool.request().query(`
+    const productos = await pool.request().input("companyId", sql.Int, companyId).query(`
         SELECT COUNT(*) AS totalProductos
-        FROM Productos
+        FROM Productos WHERE company_id=@companyId
     `);
 
-    const clientes = await pool.request().query(`
+    const clientes = await pool.request().input("companyId", sql.Int, companyId).query(`
         SELECT COUNT(*) AS totalClientes
-        FROM Clientes
+        FROM Clientes WHERE company_id=@companyId
     `);
 
 
@@ -36,16 +37,16 @@ export const obtenerResumen = async () => {
 
 
 
-export const obtenerVentasMensuales = async () => {
+export const obtenerVentasMensuales = async (companyId) => {
 
-    const ventasMensuales = await pool.request().query(`
+    const ventasMensuales = await pool.request().input("companyId", sql.Int, companyId).query(`
         SELECT 
             MONTH(fecha) AS mes,
             ISNULL(SUM(Total),0) AS totalVentas
 
         FROM Ventas
 
-        WHERE YEAR(fecha)=YEAR(GETDATE())
+        WHERE YEAR(fecha)=YEAR(GETDATE()) AND company_id=@companyId
 
         GROUP BY MONTH(fecha)
 
@@ -58,20 +59,20 @@ export const obtenerVentasMensuales = async () => {
 
 
 
-export const obtenerVentasCategorias = async () => {
+export const obtenerVentasCategorias = async (companyId) => {
 
-    const result = await pool.request().query(`
+    const result = await pool.request().input("companyId", sql.Int, companyId).query(`
     SELECT
       c.nombre AS categoria,
       SUM(d.Subtotal) AS totalVentas
     FROM Ventas v
     INNER JOIN DetalleVenta d
-      ON v.Id = d.VentaId
+      ON v.Id = d.VentaId AND d.company_id = @companyId
     INNER JOIN Productos p
-      ON d.ProductoId = p.Id
+      ON d.ProductoId = p.Id AND p.company_id = @companyId
     INNER JOIN Categorias c
-      ON p.idCategoria = c.id
-    WHERE YEAR(v.Fecha)=YEAR(GETDATE())
+      ON p.idCategoria = c.id AND c.company_id = @companyId
+    WHERE YEAR(v.Fecha)=YEAR(GETDATE()) AND v.company_id=@companyId
     GROUP BY c.nombre
     ORDER BY totalVentas DESC
     `);
@@ -82,10 +83,10 @@ export const obtenerVentasCategorias = async () => {
 
 
 
-export const obtenerDistribucionProductos = async () => {
+export const obtenerDistribucionProductos = async (companyId) => {
 
 
-    const distribucionProductos = await pool.request().query(`
+    const distribucionProductos = await pool.request().input("companyId", sql.Int, companyId).query(`
         SELECT
             p.Nombre AS producto,
             SUM(d.Subtotal) AS totalVentas
@@ -93,12 +94,12 @@ export const obtenerDistribucionProductos = async () => {
         FROM Ventas v
 
         INNER JOIN DetalleVenta d
-        ON v.Id=d.VentaId
+        ON v.Id=d.VentaId AND d.company_id = @companyId
 
         INNER JOIN Productos p
-        ON d.ProductoId=p.Id
+        ON d.ProductoId=p.Id AND p.company_id = @companyId
 
-        WHERE YEAR(v.Fecha)=YEAR(GETDATE())
+        WHERE YEAR(v.Fecha)=YEAR(GETDATE()) AND v.company_id=@companyId
 
         GROUP BY p.Nombre
 
@@ -111,9 +112,9 @@ export const obtenerDistribucionProductos = async () => {
 };
 
 
-export const obtenerVentasRecientes = async () => {
+export const obtenerVentasRecientes = async (companyId) => {
 
-    const result = await pool.request().query(`
+    const result = await pool.request().input("companyId", sql.Int, companyId).query(`
       SELECT TOP (10)
         v.Id,
         v.Codigo,
@@ -124,7 +125,8 @@ export const obtenerVentasRecientes = async () => {
         v.Estado
       FROM Ventas v
       INNER JOIN Clientes c
-      ON v.ClienteId = c.Id
+      ON v.ClienteId = c.Id AND c.company_id = @companyId
+      WHERE v.company_id=@companyId
       ORDER BY v.Fecha DESC
     `);
 

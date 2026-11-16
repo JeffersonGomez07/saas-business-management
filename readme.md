@@ -188,27 +188,30 @@ npm run dev
 
 # Environment Variables
 
-Create a `.env` file inside the **Backend** directory.
+Copy `Backend/.env.example` to `Backend/.env` and set values for your local SQL Server and a unique JWT signing secret. `.env` files are ignored by Git; never commit production credentials.
 
 ```env
 PORT=4000
-
-DB_SERVER=
-
-DB_DATABASE=
-
-DB_USER=
-
-DB_PASSWORD=
-
-JWT_SECRET=
+DB_SERVER=localhost
+DB_PORT=1433
+DB_DATABASE=SaaS
+DB_USER=your_sql_server_user
+DB_PASSWORD=your_sql_server_password
+JWT_SECRET=replace-this-with-a-random-secret-of-at-least-32-characters
 ```
+
+`JWT_SECRET` must be a private random value (at least 32 characters) and must be identical anywhere the backend signs or verifies tokens. Do not reuse the example value.
+If a credential was previously committed, rotate it; ignoring `.env` does not remove values from Git history.
 
 ---
 
 # Database
 
-The application is designed to work primarily with Microsoft SQL Server.
+The application uses Microsoft SQL Server. For a new installation, run `Script/schema.sql`. To upgrade an existing installation, first back up the database and run `Script/migrate-multiempresa.sql`.
+
+The migration creates a separate company for each existing user to avoid merging accounts based on possibly duplicated `company_name` values. If multiple users should share a tenant, review and reassign their `company_id` values explicitly. Legacy customers, products, sales, sale details, categories and suppliers have no reliable ownership information, so they remain unassigned (`company_id IS NULL`) and are intentionally hidden from tenant-scoped API responses. Review and assign those records to the correct company before making them available. Do not assign historical data to a tenant unless that ownership is confirmed.
+
+New registrations create a company, a default `General` category, and user preferences. Each private API request requires a valid bearer JWT; company and user identity are taken from the verified token.
 
 Main entities include:
 
@@ -245,7 +248,6 @@ Main entities include:
 - Excel export
 - Email notifications
 - Role-based access control
-- Multi-tenant architecture
 - Audit logs
 - Swagger API documentation
 - Unit and integration testing

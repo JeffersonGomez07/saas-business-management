@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger} from "
 import { Label } from "../components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import { Plus, Search, Filter, Eye, Download } from "lucide-react";
+import { apiFetch } from "../service/api";
 
 type Cliente = {
   Id: number;
@@ -77,7 +78,7 @@ const registrarVenta = async () => {
     return;
   }
 
-  const response = await fetch(
+  const response = await apiFetch(
     "http://localhost:4000/api/ventas",
     {
       method: "POST",
@@ -133,14 +134,14 @@ const eliminarProducto = (index: number) => {
   );
 };
 useEffect(() => {
-  fetch("http://localhost:4000/api/clientesVenta")
+  apiFetch("http://localhost:4000/api/clientesVenta")
     .then((r) => r.json())
     .then((data) => {
       console.log(data);
       setClientes(data);
     });
 
-  fetch("http://localhost:4000/api/productosVenta")
+  apiFetch("http://localhost:4000/api/productosVenta")
     .then((r) => r.json())
     .then((data) => {
       console.log(data);
@@ -149,7 +150,7 @@ useEffect(() => {
 }, []);
 
   useEffect(() => {
-    fetch("http://localhost:4000/api/ventas")
+    apiFetch("http://localhost:4000/api/ventas")
       .then((res) => res.json())
       .then((data) => {
         console.log(data);
@@ -160,7 +161,7 @@ useEffect(() => {
 
   const [listadoVentas, setListadoVentas] = useState<listadoVenta[]>([]); 
   useEffect(() => {
-    fetch("http://localhost:4000/api/listado-ventas")
+    apiFetch("http://localhost:4000/api/listado-ventas")
       .then((res) => res.json())
       .then((data) => {
         console.log(data);

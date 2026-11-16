@@ -4,6 +4,7 @@ dotenv.config();
 import express from "express";
 import cors from "cors";
 import path from "path";
+import { verifyToken } from "./src/middlewares/auth.middleware.js";
 const app = express(); // Crear instancia de Express
 
 app.use(cors());
@@ -21,9 +22,14 @@ import reportesRoutes from "./src/routes/reportes.routes.js";
 import profileRoutes from "./src/routes/profile.routes.js";
 import notificacionesRoutes from "./src/routes/notificaciones.routes.js"
 
+if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
+    throw new Error("JWT_SECRET debe configurarse con al menos 32 caracteres");
+}
+
 // Registrar las rutas de usuario
 app.use("/api/auth", authRoutes);
 
+app.use("/api", verifyToken);
 app.use("/api/users", userRoutes);
 // Registrar las rutas del dashboard
 app.use("/api/dashboard", dashboardRoutes);
@@ -43,7 +49,8 @@ app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 app.use("/api/notificaciones", notificacionesRoutes)
 
 
-app.listen(4000, () => {
-    console.log("Servidor escuchando en el puerto 4000");
+const port = Number(process.env.PORT || 4000);
+app.listen(port, () => {
+    console.log(`Servidor escuchando en el puerto ${port}`);
 });
 export default app;

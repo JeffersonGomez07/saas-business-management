@@ -1,18 +1,10 @@
-export const generarCodigoVenta = (ultimoCodigo) => {
+export const generarCodigoVenta = (ultimoCodigo, companyId) => {
 
-  if (!ultimoCodigo) {
-    return "V0001";
-  }
+  const numeroActual = ultimoCodigo
+    ? parseInt(ultimoCodigo.substring(ultimoCodigo.lastIndexOf("-") + 1), 10)
+    : 0;
 
-  const numeroActual = parseInt(
-    ultimoCodigo.substring(1)
-  );
+  const siguiente = Number.isNaN(numeroActual) ? 1 : numeroActual + 1;
 
-  if (isNaN(numeroActual)) {
-    return "V0001";
-  }
-
-  return "V" + (numeroActual + 1)
-    .toString()
-    .padStart(4, "0");
+  return `V${companyId}-${siguiente.toString().padStart(4, "0")}`;
 };

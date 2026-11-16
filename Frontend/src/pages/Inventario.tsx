@@ -8,6 +8,7 @@ import {Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "
 import { Label } from "../components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import { Plus, Search, AlertTriangle, Edit, Trash2 } from "lucide-react";
+import { apiFetch } from "../service/api";
 
 type InventarioProducto = {
   totalProductos : number;
@@ -18,6 +19,7 @@ type listadoProducto = {
   Id: string;
   Producto: string;
   SKU: string;
+  ProveedorId: number | null;
   Categoria: string;
   Stock: number;
   Precio: number;
@@ -45,7 +47,7 @@ export default function Inventario() {
  useEffect(() => {
     const obtenerInventarioTotal = async () => {
       try {
-        const res = await fetch("http://localhost:4000/api/inventario");
+        const res = await apiFetch("http://localhost:4000/api/inventario");
 
         if (!res.ok) {
           throw new Error("Error al obtener el inventario total");
@@ -66,7 +68,7 @@ export default function Inventario() {
   useEffect(() => {
     const obtenerListadoProductos = async () => {
       try {
-        const res = await fetch("http://localhost:4000/api/listado-productos");
+        const res = await apiFetch("http://localhost:4000/api/listado-productos");
 
         if (!res.ok) {
           throw new Error("Error al obtener el listado de productos");
@@ -87,7 +89,7 @@ export default function Inventario() {
   useEffect(() => {
     const obtenerCategorias = async () => {
       try {
-        const res = await fetch("http://localhost:4000/api/categorias");
+        const res = await apiFetch("http://localhost:4000/api/categorias");
 
         if (!res.ok) {
           throw new Error("Error al obtener las categorías");
@@ -122,7 +124,7 @@ export default function Inventario() {
       nombre: producto.Producto,
       sku: producto.SKU,
       categoria: producto.Categoria,
-      proveedor: producto.Proveedor,
+      proveedor: producto.ProveedorId?.toString() ?? "",
       precio: producto.Precio.toString(),
       stock: producto.Stock.toString(),
       minStock: producto.MinStock.toString()
@@ -137,7 +139,7 @@ export default function Inventario() {
 
     try{
 
-      const res = await fetch(
+      const res = await apiFetch(
         "http://localhost:4000/api/proveedores"
       );
 
@@ -165,7 +167,7 @@ export default function Inventario() {
 
   try {
 
-    const res = await fetch(
+    const res = await apiFetch(
       `http://localhost:4000/api/productos/${Id}`,
       {
         method: "DELETE",
@@ -187,7 +189,7 @@ export default function Inventario() {
 
 const agregarProducto = async () => {
   try {
-    const res = await fetch(
+    const res = await apiFetch(
       "http://localhost:4000/api/productos",
       {
         method: "POST",
@@ -198,7 +200,7 @@ const agregarProducto = async () => {
           nombre: formData.nombre,
           sku: formData.sku,
           categoria: formData.categoria,
-          proveedor: Number(formData.proveedor),
+          proveedor: formData.proveedor ? Number(formData.proveedor) : null,
           precio: Number(formData.precio),
           stock: Number(formData.stock),
           minStock: Number(formData.minStock),
@@ -225,7 +227,7 @@ const actualizarProducto = async () => {
   if (!productoEditar) return;
 
   try {
-    const res = await fetch(
+    const res = await apiFetch(
       `http://localhost:4000/api/productos/${productoEditar.Id}`,
       {
         method: "PUT",
@@ -236,7 +238,7 @@ const actualizarProducto = async () => {
           nombre: formData.nombre,
           sku: formData.sku,
           categoria: formData.categoria,
-          proveedor: formData.proveedor,
+          proveedor: formData.proveedor ? Number(formData.proveedor) : null,
           precio: Number(formData.precio),
           stock: Number(formData.stock),
           minStock: Number(formData.minStock),
@@ -271,7 +273,7 @@ const actualizarProducto = async () => {
 };
 const cargarProductos = async () => {
   try {
-    const res = await fetch(
+    const res = await apiFetch(
       "http://localhost:4000/api/listado-productos"
     );
 
@@ -402,7 +404,12 @@ const cargarProductos = async () => {
                 </div>
                 <div className="space-y-2">
                   <Label>Proveedor</Label>
-                  <Select>
+                  <Select
+                    value={formData.proveedor}
+                    onValueChange={(value) =>
+                      setFormData({ ...formData, proveedor: value })
+                    }
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Seleccionar proveedor"/>
                     </SelectTrigger>

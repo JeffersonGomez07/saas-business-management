@@ -176,7 +176,27 @@ export const obtenerPreferencias = async(id)=>{
 
 };
 
+export const obtenerApariencia = async (id) => {
+    const result = await pool.request()
+      .input("id", id)
+      .query("SELECT theme, language, date_format, timezone FROM user_preferences WHERE user_id=@id");
+    return result.recordset[0];
+};
 
+export const actualizarApariencia = async (id, datos) => {
+    const result = await pool.request()
+      .input("id", id)
+      .input("theme", datos.theme)
+      .input("language", datos.language)
+      .input("date_format", datos.date_format)
+      .input("timezone", datos.timezone)
+      .query(`
+        UPDATE user_preferences
+        SET theme=@theme, language=@language, date_format=@date_format, timezone=@timezone
+        WHERE user_id=@id
+      `);
+    return result.rowsAffected[0];
+};
 
 
 export const actualizarPreferencias = async(id,datos)=>{

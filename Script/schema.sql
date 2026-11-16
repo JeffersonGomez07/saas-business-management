@@ -9,12 +9,27 @@ USE SaaS;
 GO
 
 /*==============================================================
+  Tabla: Empresas
+==============================================================*/
+
+CREATE TABLE companies (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    name NVARCHAR(150) NOT NULL,
+    created_at DATETIME2 NOT NULL DEFAULT GETDATE()
+);
+GO
+
+/*==============================================================
   Tabla: Categorias
 ==============================================================*/
 
 CREATE TABLE Categorias (
     id INT IDENTITY(1,1) PRIMARY KEY,
-    nombre VARCHAR(100) NOT NULL
+    nombre VARCHAR(100) NOT NULL,
+    company_id INT NOT NULL,
+    CONSTRAINT FK_Categorias_Companies FOREIGN KEY (company_id) REFERENCES companies(id),
+    CONSTRAINT UQ_Categorias_Company_Id UNIQUE (company_id, id),
+    CONSTRAINT UQ_Categorias_Company_Nombre UNIQUE (company_id, nombre)
 );
 GO
 
@@ -25,11 +40,22 @@ GO
 CREATE TABLE Clientes (
     Id INT IDENTITY(1,1) PRIMARY KEY,
     Nombre NVARCHAR(100) NOT NULL,
-    Correo NVARCHAR(100) UNIQUE,
-    Telefono NVARCHAR(20) UNIQUE,
+    Correo NVARCHAR(100),
+    Telefono NVARCHAR(20),
     FechaCreacion DATETIME DEFAULT GETDATE(),
-    direccion VARCHAR(255)
+    direccion VARCHAR(255),
+    company_id INT NOT NULL,
+    CONSTRAINT FK_Clientes_Companies FOREIGN KEY (company_id) REFERENCES companies(id),
+    CONSTRAINT UQ_Clientes_Company_Id UNIQUE (company_id, id)
 );
+GO
+
+CREATE UNIQUE INDEX UQ_Clientes_Company_Correo
+ON Clientes(company_id, Correo) WHERE Correo IS NOT NULL;
+GO
+
+CREATE UNIQUE INDEX UQ_Clientes_Company_Telefono
+ON Clientes(company_id, Telefono) WHERE Telefono IS NOT NULL;
 GO
 
 /*==============================================================
@@ -40,7 +66,10 @@ CREATE TABLE Proveedores (
     Id INT IDENTITY(1,1) PRIMARY KEY,
     Nombre VARCHAR(100),
     Telefono VARCHAR(30),
-    Correo VARCHAR(100)
+    Correo VARCHAR(100),
+    company_id INT NOT NULL,
+    CONSTRAINT FK_Proveedores_Companies FOREIGN KEY (company_id) REFERENCES companies(id),
+    CONSTRAINT UQ_Proveedores_Company_Id UNIQUE (company_id, id)
 );
 GO
 
@@ -61,7 +90,12 @@ CREATE TABLE Productos (
     Activo BIT DEFAULT 1,
     FechaCreacion DATETIME2 DEFAULT GETDATE(),
     FechaActualizacion DATETIME2,
-    costo DECIMAL(10,2)
+    costo DECIMAL(10,2),
+    company_id INT NOT NULL,
+    CONSTRAINT FK_Productos_Companies FOREIGN KEY (company_id) REFERENCES companies(id),
+    CONSTRAINT UQ_Productos_Company_Id UNIQUE (company_id, id),
+    CONSTRAINT FK_Productos_Categorias_Company FOREIGN KEY (company_id, idCategoria) REFERENCES Categorias(company_id, id),
+    CONSTRAINT FK_Productos_Proveedores_Company FOREIGN KEY (company_id, ProveedorId) REFERENCES Proveedores(company_id, id)
 );
 GO
 
@@ -73,13 +107,16 @@ CREATE TABLE users (
     id INT IDENTITY(1,1) PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
     company_name VARCHAR(150) NOT NULL,
+    company_id INT NOT NULL,
     email VARCHAR(150) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
     created_at DATETIME DEFAULT GETDATE(),
     telefono VARCHAR(20),
     direccion VARCHAR(255),
     fotoPerfil VARCHAR(500),
-    updated_at DATETIME
+    updated_at DATETIME,
+    CONSTRAINT FK_Users_Companies FOREIGN KEY (company_id) REFERENCES companies(id),
+    CONSTRAINT UQ_Users_Company_Id UNIQUE (company_id, id)
 );
 GO
 
@@ -108,12 +145,17 @@ GO
 
 CREATE TABLE Ventas (
     Id INT IDENTITY(1,1) PRIMARY KEY,
-    Codigo NVARCHAR(20) NOT NULL UNIQUE,
+    Codigo NVARCHAR(20) NOT NULL,
     Fecha DATETIME DEFAULT GETDATE(),
     ClienteId INT NOT NULL,
     Total DECIMAL(10,2) NOT NULL,
     MetodoPago NVARCHAR(30) NOT NULL,
-    Estado NVARCHAR(20) NOT NULL
+    Estado NVARCHAR(20) NOT NULL,
+    company_id INT NOT NULL,
+    CONSTRAINT FK_Ventas_Companies FOREIGN KEY (company_id) REFERENCES companies(id),
+    CONSTRAINT UQ_Ventas_Company_Id UNIQUE (company_id, id),
+    CONSTRAINT UQ_Ventas_Company_Codigo UNIQUE (company_id, Codigo),
+    CONSTRAINT FK_Ventas_Clientes_Company FOREIGN KEY (company_id, ClienteId) REFERENCES Clientes(company_id, id)
 );
 GO
 
@@ -127,7 +169,11 @@ CREATE TABLE DetalleVenta (
     ProductoId INT NOT NULL,
     Cantidad INT NOT NULL,
     PrecioUnitario DECIMAL(10,2) NOT NULL,
-    Subtotal DECIMAL(10,2) NOT NULL
+    Subtotal DECIMAL(10,2) NOT NULL,
+    company_id INT NOT NULL,
+    CONSTRAINT FK_DetalleVenta_Companies FOREIGN KEY (company_id) REFERENCES companies(id),
+    CONSTRAINT FK_DetalleVenta_Ventas_Company FOREIGN KEY (company_id, VentaId) REFERENCES Ventas(company_id, id),
+    CONSTRAINT FK_DetalleVenta_Productos_Company FOREIGN KEY (company_id, ProductoId) REFERENCES Productos(company_id, id)
 );
 GO
 
@@ -144,61 +190,16 @@ CREATE TABLE Notificaciones (
     Prioridad VARCHAR(20) DEFAULT 'Normal',
     Leida BIT DEFAULT 0,
     Fecha DATETIME DEFAULT GETDATE(),
-    FechaLectura DATETIME NULL
+    FechaLectura DATETIME NULL,
+    company_id INT NOT NULL,
+    CONSTRAINT FK_Notificaciones_Companies FOREIGN KEY (company_id) REFERENCES companies(id),
+    CONSTRAINT FK_Notificaciones_Users_Company FOREIGN KEY (company_id, UserId) REFERENCES users(company_id, id)
 );
 GO
 
 /*==============================================================
   Relaciones (FOREIGN KEY)
 ==============================================================*/
-
-/* Productos -> Categorias */
-
-ALTER TABLE Productos
-ADD CONSTRAINT FK_Productos_Categorias
-FOREIGN KEY (idCategoria)
-REFERENCES Categorias(id);
-GO
-
-/* Productos -> Proveedores */
-
-ALTER TABLE Productos
-ADD CONSTRAINT FK_ProductoProveedor
-FOREIGN KEY (ProveedorId)
-REFERENCES Proveedores(Id);
-GO
-
-/* Ventas -> Clientes */
-
-ALTER TABLE Ventas
-ADD CONSTRAINT FK_Ventas_Clientes
-FOREIGN KEY (ClienteId)
-REFERENCES Clientes(Id);
-GO
-
-/* DetalleVenta -> Ventas */
-
-ALTER TABLE DetalleVenta
-ADD CONSTRAINT FK_DetalleVenta_Ventas
-FOREIGN KEY (VentaId)
-REFERENCES Ventas(Id);
-GO
-
-/* DetalleVenta -> Productos */
-
-ALTER TABLE DetalleVenta
-ADD CONSTRAINT FK_DetalleVenta_Productos
-FOREIGN KEY (ProductoId)
-REFERENCES Productos(Id);
-GO
-
-/* Notificaciones -> Users */
-
-ALTER TABLE Notificaciones
-ADD CONSTRAINT FK_Notificaciones_Users
-FOREIGN KEY (UserId)
-REFERENCES users(id);
-GO
 
 /* User Preferences -> Users */
 

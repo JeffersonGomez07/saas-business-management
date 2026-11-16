@@ -3,7 +3,7 @@ import * as dashboardService from "../services/dashboard.service.js";
 export const obtenerResumen = async (req,res)=>{
 
     try{
-        const resumen = await dashboardService.obtenerResumen();
+        const resumen = await dashboardService.obtenerResumen(req.user.companyId);
         res.json(resumen);
 
     }catch(error){
@@ -18,7 +18,7 @@ export const obtenerVentasMensuales = async(req,res)=>{
 
     try{
         const ventasMensuales =
-            await dashboardService.obtenerVentasMensuales();
+            await dashboardService.obtenerVentasMensuales(req.user.companyId);
         res.json({
             ventasMensuales
         });
@@ -34,7 +34,7 @@ export const obtenerVentasMensuales = async(req,res)=>{
 export const obtenerVentasCategorias = async (req, res) => {
   try {
     const ventasCategorias =
-      await dashboardService.obtenerVentasCategorias();
+      await dashboardService.obtenerVentasCategorias(req.user.companyId);
 
     res.json({ ventasCategorias });
   } catch (error) {
@@ -48,7 +48,7 @@ export const obtenerVentasCategorias = async (req, res) => {
 export const obtenerDistribucionProductos = async (req, res) => {
   try {
     const distribucionProductos =
-      await dashboardService.obtenerDistribucionProductos();
+      await dashboardService.obtenerDistribucionProductos(req.user.companyId);
 
     res.json({ distribucionProductos });
   } catch (error) {
@@ -63,7 +63,7 @@ export const obtenerDistribucionProductos = async (req, res) => {
 export const obtenerVentasRecientes = async (req, res) => {
   try {
     const ventasRecientes =
-      await dashboardService.obtenerVentasRecientes();
+      await dashboardService.obtenerVentasRecientes(req.user.companyId);
 
     res.json({ ventasRecientes });
   } catch (error) {

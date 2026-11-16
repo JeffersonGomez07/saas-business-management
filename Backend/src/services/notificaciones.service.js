@@ -1,11 +1,12 @@
 import pool from "../config/db.js";
 
 
-export const obtenerNotificaciones = async (userId) => {
+export const obtenerNotificaciones = async (userId, companyId) => {
 
     const result = await pool
         .request()
         .input("userId", userId)
+        .input("companyId", companyId)
         .query(`
             SELECT
                 Id,
@@ -17,7 +18,7 @@ export const obtenerNotificaciones = async (userId) => {
                 Fecha,
                 FechaLectura
             FROM Notificaciones
-            WHERE UserId = @userId
+            WHERE UserId = @userId AND company_id = @companyId
             ORDER BY Fecha DESC
         `);
 
@@ -26,15 +27,16 @@ export const obtenerNotificaciones = async (userId) => {
 
 
 
-export const obtenerNoLeidas = async (userId) => {
+export const obtenerNoLeidas = async (userId, companyId) => {
 
     const result = await pool
         .request()
         .input("userId", userId)
+        .input("companyId", companyId)
         .query(`
             SELECT *
             FROM Notificaciones
-            WHERE UserId = @userId
+            WHERE UserId = @userId AND company_id = @companyId
             AND Leida = 0
             ORDER BY Fecha DESC
         `);
@@ -44,11 +46,12 @@ export const obtenerNoLeidas = async (userId) => {
 
 
 
-export const obtenerResumen = async (userId) => {
+export const obtenerResumen = async (userId, companyId) => {
 
     const result = await pool
         .request()
         .input("userId", userId)
+        .input("companyId", companyId)
         .query(`
             SELECT
                 COUNT(*) AS Total,
@@ -58,7 +61,7 @@ export const obtenerResumen = async (userId) => {
                 SUM(CASE WHEN Categoria='Clientes' THEN 1 ELSE 0 END) AS Clientes,
                 SUM(CASE WHEN Categoria='Sistema' THEN 1 ELSE 0 END) AS Sistema
             FROM Notificaciones
-            WHERE UserId=@userId
+            WHERE UserId=@userId AND company_id=@companyId
         `);
 
 
@@ -74,7 +77,8 @@ export const crearNotificacion = async (data) => {
         titulo,
         mensaje,
         categoria,
-        prioridad = "Normal"
+        prioridad = "Normal",
+        companyId
     } = data;
 
 
@@ -85,6 +89,7 @@ export const crearNotificacion = async (data) => {
         .input("mensaje", mensaje)
         .input("categoria", categoria)
         .input("prioridad", prioridad)
+        .input("companyId", companyId)
         .query(`
             INSERT INTO Notificaciones
             (
@@ -92,7 +97,8 @@ export const crearNotificacion = async (data) => {
                 Titulo,
                 Mensaje,
                 Categoria,
-                Prioridad
+                Prioridad,
+                company_id
             )
             VALUES
             (
@@ -100,7 +106,8 @@ export const crearNotificacion = async (data) => {
                 @titulo,
                 @mensaje,
                 @categoria,
-                @prioridad
+                @prioridad,
+                @companyId
             )
         `);
 
@@ -112,18 +119,20 @@ export const crearNotificacion = async (data) => {
 
 
 
-export const marcarComoLeida = async (id) => {
+export const marcarComoLeida = async (id, userId, companyId) => {
 
 
     await pool
         .request()
         .input("id", id)
+        .input("userId", userId)
+        .input("companyId", companyId)
         .query(`
             UPDATE Notificaciones
             SET
                 Leida = 1,
                 FechaLectura = GETDATE()
-            WHERE Id=@id
+            WHERE Id=@id AND UserId=@userId AND company_id=@companyId
         `);
 
 
@@ -134,18 +143,19 @@ export const marcarComoLeida = async (id) => {
 
 
 
-export const marcarTodasComoLeidas = async (userId) => {
+export const marcarTodasComoLeidas = async (userId, companyId) => {
 
 
     await pool
         .request()
         .input("userId", userId)
+        .input("companyId", companyId)
         .query(`
             UPDATE Notificaciones
             SET
                 Leida = 1,
                 FechaLectura = GETDATE()
-            WHERE UserId=@userId
+            WHERE UserId=@userId AND company_id=@companyId
             AND Leida=0
         `);
 
@@ -157,15 +167,17 @@ export const marcarTodasComoLeidas = async (userId) => {
 
 
 
-export const eliminarNotificacion = async (id) => {
+export const eliminarNotificacion = async (id, userId, companyId) => {
 
 
     await pool
         .request()
         .input("id", id)
+        .input("userId", userId)
+        .input("companyId", companyId)
         .query(`
             DELETE FROM Notificaciones
-            WHERE Id=@id
+            WHERE Id=@id AND UserId=@userId AND company_id=@companyId
         `);
 
 
@@ -176,15 +188,16 @@ export const eliminarNotificacion = async (id) => {
 
 
 
-export const limpiarNotificaciones = async (userId) => {
+export const limpiarNotificaciones = async (userId, companyId) => {
 
 
     await pool
         .request()
         .input("userId", userId)
+        .input("companyId", companyId)
         .query(`
             DELETE FROM Notificaciones
-            WHERE UserId=@userId
+            WHERE UserId=@userId AND company_id=@companyId
         `);
 
 
@@ -195,16 +208,17 @@ export const limpiarNotificaciones = async (userId) => {
 
 
 
-export const obtenerCantidadNoLeidas = async (userId)=>{
+export const obtenerCantidadNoLeidas = async (userId, companyId)=>{
 
 
     const result = await pool
         .request()
         .input("UserId", userId)
+        .input("companyId", companyId)
         .query(`
             SELECT COUNT(*) AS total
             FROM Notificaciones
-            WHERE UserId=@UserId
+            WHERE UserId=@UserId AND company_id=@companyId
             AND Leida=0
         `);
 

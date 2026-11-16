@@ -1,9 +1,12 @@
 import { Router } from "express";
+import { verifyToken } from "../middlewares/auth.middleware.js";
 
 import { obtenerNotificaciones, obtenerNoLeidas, obtenerResumen, crearNotificacion, marcarComoLeida, marcarTodasComoLeidas, eliminarNotificacion, limpiarNotificaciones, obtenerCantidadNoLeidas} from "../controllers/notificaciones.controller.js";
 
 const router = Router();
+router.use(verifyToken);
 
+router.get("/count/me", obtenerCantidadNoLeidas);
 
 router.get("/:userId/unread", obtenerNoLeidas);
 

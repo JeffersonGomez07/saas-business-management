@@ -9,6 +9,7 @@ import { Switch } from "../components/ui/switch";
 import { Separator } from "../components/ui/separator";
 import { User, Mail, Phone, Building, MapPin, Lock, Bell, Save } from "lucide-react";
 import { toast } from "sonner";
+import api from "../service/api";
 
 type Perfil = {
   id : number;
@@ -33,17 +34,8 @@ export default function Configuracion() {
   useEffect(() => {
       const informacionPerfil = async () => {
       try {
-        const id = 1;
-        const res = await fetch(`http://localhost:4000/api/profile/${id}`);
-
-        if (!res.ok) {
-          throw new Error("error al obtener el perfil");
-        }
-
-        const data = await res.json();
-        console.log(data);
-
-        setInfoPerfil(data);
+        const res = await api.get("/api/profile/me");
+        setInfoPerfil(res.data);
       } catch (error) {
         console.error(error);
       }
@@ -51,17 +43,8 @@ export default function Configuracion() {
       const obtenerPreferencias = async () => {
         try {
 
-          const id = 1;
-
-          const res = await fetch(
-            `http://localhost:4000/api/profile/notificaciones/${id}`
-          );
-
-          if (!res.ok) {
-            throw new Error();
-          }
-
-          const data = await res.json();
+          const res = await api.get("/api/profile/me/preferences");
+          const data = res.data;
 
           setNotificaciones({
             email: data.email_notifications,
@@ -88,24 +71,10 @@ export default function Configuracion() {
 
   try {
 
-    const res = await fetch(
-      `http://localhost:4000/api/profile/${infoPerfil.id}`,
-      {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(infoPerfil),
-      }
-    );
-
-    const data = await res.json();
+    const res = await api.put("/api/profile/me", infoPerfil);
+    const data = res.data;
 
     console.log(data);
-
-    if (!res.ok) {
-      throw new Error(data.message);
-    }
 
     setInfoPerfil(data.data);
 
@@ -141,17 +110,7 @@ const subirFoto = async () => {
 
     formData.append("foto", foto);
 
-    const res = await fetch(
-        `http://localhost:4000/api/profile/foto/${infoPerfil?.id}`,
-        {
-            method: "PUT",
-            body: formData
-        }
-    );
-
-    if(!res.ok){
-          throw new Error("Error al subir foto");
-      }
+    await api.put("/api/profile/me/photo", formData);
 };
 
 const cambiarPassword = async()=>{
@@ -163,26 +122,7 @@ const cambiarPassword = async()=>{
 
   }
   try{
-    console.log("ID usuario:", infoPerfil?.id);
-    console.log("Datos password:", passwordData);
-   const res = await fetch(
-  `http://localhost:4000/api/profile/password/${infoPerfil?.id}`,
-  {
-    method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(passwordData),
-  }
-  );
-
-  const data = await res.json();
-
-  console.log(data);
-
-  if (!res.ok) {
-    throw new Error(data.message);
-  }
+    await api.put("/api/profile/me/password", passwordData);
     toast.success("Contraseña actualizada");
 
     setPasswordData({
@@ -199,20 +139,7 @@ const guardarPreferencias = async () => {
 
   try {
 
-    const res = await fetch(
-      `http://localhost:4000/api/profile/notificaciones/${infoPerfil?.id}`,
-      {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(notificaciones),
-      }
-    );
-
-    if (!res.ok) {
-      throw new Error();
-    }
+    await api.put("/api/profile/me/preferences", notificaciones);
 
     toast.success("Preferencias guardadas");
 

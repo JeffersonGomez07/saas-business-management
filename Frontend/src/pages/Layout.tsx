@@ -16,6 +16,7 @@ import {
   X,
   Zap
 } from "lucide-react";
+import api from "../service/api";
 
 
 type Usuario = {
@@ -33,8 +34,6 @@ export default function Layout() {
   const [usuario, setUsuario] = useState<Usuario | null>(null);
   const [notifications, setNotifications] = useState(0);
 
-  const userId = 1;
-
   // Obtener usuario
   useEffect(() => {
 
@@ -42,21 +41,8 @@ export default function Layout() {
 
       try {
 
-        const res = await fetch(
-          `http://localhost:4000/api/profile/${userId}`
-        );
-
-
-        if(!res.ok){
-
-          throw new Error(
-            "Error obteniendo usuario"
-          );
-
-        }
-        const data = await res.json();
-
-        setUsuario(data);
+        const res = await api.get("/api/profile/me");
+        setUsuario(res.data);
 
       } catch(error){
 
@@ -72,16 +58,8 @@ export default function Layout() {
   useEffect(() => {
     const obtenerCantidadNotificaciones = async()=>{
       try{
-        const res = await fetch(
-          `http://localhost:4000/api/notificaciones/count/${userId}`
-        );
-        if(!res.ok){
-          throw new Error(
-            "Error contando notificaciones"
-          );
-        }
-        const data = await res.json();
-        setNotifications(data.total);
+        const res = await api.get("/api/notificaciones/count/me");
+        setNotifications(res.data.total);
       }catch(error){
         console.error(error);
       }
@@ -98,9 +76,8 @@ export default function Layout() {
     { path: "/app/configuracion", icon: Settings, label: "Configuración" },
   ];
   const handleLogout = () => {
-
-    navigate("/");
-
+    localStorage.removeItem("token");
+    navigate("/login");
   };
   const isActive = (path:string)=>{
     if(path === "/app"){

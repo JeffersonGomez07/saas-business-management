@@ -4,9 +4,9 @@ import { generarCodigoVenta } from "../utils/generarCodigoVenta.js";
 import { validarVenta } from "../validators/ventas.validator.js";
 
 
-export const ventas = async () => {
+export const ventas = async (companyId) => {
 
-    const result = await pool.request().query(`
+    const result = await pool.request().input("companyId", sql.Int, companyId).query(`
       SELECT
         COUNT(*) AS transacciones,
         ISNULL(SUM(Total),0) AS totalVentas,
@@ -15,6 +15,7 @@ export const ventas = async () => {
           THEN 1 ELSE 0 END
         ) AS completadas
       FROM Ventas
+      WHERE company_id = @companyId
     `);
 
     return result.recordset[0];
@@ -22,9 +23,9 @@ export const ventas = async () => {
 
 
 
-export const listadoVentas = async () => {
+export const listadoVentas = async (companyId) => {
 
-  const result = await pool.request().query(`
+  const result = await pool.request().input("companyId", sql.Int, companyId).query(`
       SELECT
         v.Id,
         v.Codigo,
@@ -36,11 +37,12 @@ export const listadoVentas = async () => {
         p.Nombre AS Producto
       FROM Ventas v
       INNER JOIN Clientes c
-        ON v.ClienteId = c.Id
+        ON v.ClienteId = c.Id AND c.company_id = @companyId
       INNER JOIN DetalleVenta dv
-        ON v.Id = dv.VentaId
+        ON v.Id = dv.VentaId AND dv.company_id = @companyId
       INNER JOIN Productos p
-        ON dv.ProductoId = p.Id
+        ON dv.ProductoId = p.Id AND p.company_id = @companyId
+      WHERE v.company_id = @companyId
   `);
 
 
@@ -50,7 +52,7 @@ export const listadoVentas = async () => {
 
 
 
-export const registrarVenta = async (datos) => {
+export const registrarVenta = async (datos, companyId) => {
 
 
    validarVenta(datos);
@@ -73,25 +75,35 @@ export const registrarVenta = async (datos) => {
 
 
     const ultimoCodigoResult = await new sql.Request(transaction)
+      .input("companyId", sql.Int, companyId)
       .query(`
         SELECT TOP 1 Codigo
         FROM Ventas
-        WHERE Codigo LIKE 'V%'
+        WHERE Codigo LIKE 'V%' AND company_id = @companyId
         ORDER BY Id DESC
       `);
 
 
     const ultimoCodigo = ultimoCodigoResult.recordset[0]?.Codigo;
 
-    const codigoVenta = generarCodigoVenta(ultimoCodigo);
+    const codigoVenta = generarCodigoVenta(ultimoCodigo, companyId);
 
 
+
+    const cliente = await new sql.Request(transaction)
+      .input("clienteId", sql.Int, clienteId)
+      .input("companyId", sql.Int, companyId)
+      .query("SELECT Id FROM Clientes WHERE Id = @clienteId AND company_id = @companyId");
+    if (!cliente.recordset.length) {
+      throw new Error("Cliente no encontrado");
+    }
 
     const result = await new sql.Request(transaction)
 
       .input("codigo", codigoVenta)
       .input("clienteId", clienteId)
       .input("metodoPago", metodoPago)
+      .input("companyId", sql.Int, companyId)
 
       .query(`
         INSERT INTO Ventas
@@ -101,7 +113,8 @@ export const registrarVenta = async (datos) => {
           ClienteId,
           Total,
           MetodoPago,
-          Estado
+          Estado,
+          company_id
         )
 
         VALUES
@@ -111,7 +124,8 @@ export const registrarVenta = async (datos) => {
           @clienteId,
           0,
           @metodoPago,
-          'Completada'
+          'Completada',
+          @companyId
         );
 
         SELECT SCOPE_IDENTITY() AS ventaId;
@@ -132,13 +146,17 @@ export const registrarVenta = async (datos) => {
       const detalle = await new sql.Request(transaction)
 
         .input("productoId", item.productoId)
+        .input("companyId", sql.Int, companyId)
 
         .query(`
           SELECT Precio
           FROM Productos
-          WHERE Id=@productoId
+          WHERE Id=@productoId AND company_id=@companyId AND Activo=1
         `);
 
+      if (!detalle.recordset.length) {
+        throw new Error("Producto no encontrado");
+      }
 
 
       const precio = detalle.recordset[0].Precio;
@@ -158,6 +176,7 @@ export const registrarVenta = async (datos) => {
         .input("cantidad", item.cantidad)
         .input("precio", precio)
         .input("subtotal", subtotal)
+        .input("companyId", sql.Int, companyId)
 
         .query(`
           INSERT INTO DetalleVenta
@@ -167,6 +186,7 @@ export const registrarVenta = async (datos) => {
             Cantidad,
             PrecioUnitario,
             Subtotal
+            , company_id
           )
 
           VALUES
@@ -176,6 +196,7 @@ export const registrarVenta = async (datos) => {
             @cantidad,
             @precio,
             @subtotal
+            , @companyId
           )
         `);
 
@@ -187,11 +208,12 @@ export const registrarVenta = async (datos) => {
 
       .input("ventaId", ventaId)
       .input("total", total)
+      .input("companyId", sql.Int, companyId)
 
       .query(`
         UPDATE Ventas
         SET Total=@total
-        WHERE Id=@ventaId
+        WHERE Id=@ventaId AND company_id=@companyId
       `);
 
 
@@ -220,15 +242,16 @@ export const registrarVenta = async (datos) => {
 
 
 
-export const obtenerClientes = async () => {
+export const obtenerClientes = async (companyId) => {
 
 
-    const result = await pool.request().query(`
+    const result = await pool.request().input("companyId", sql.Int, companyId).query(`
 
       SELECT
         Id,
         Nombre
       FROM Clientes
+      WHERE company_id = @companyId
       ORDER BY Nombre;
 
     `);
@@ -242,10 +265,10 @@ export const obtenerClientes = async () => {
 
 
 
-export const obtenerProductos = async () => {
+export const obtenerProductos = async (companyId) => {
 
 
-    const result = await pool.request().query(`
+    const result = await pool.request().input("companyId", sql.Int, companyId).query(`
 
       SELECT
         Id,
@@ -253,7 +276,7 @@ export const obtenerProductos = async () => {
         Precio,
         Stock
       FROM Productos
-      WHERE Activo=1
+      WHERE Activo=1 AND company_id = @companyId
       ORDER BY Nombre;
 
     `);

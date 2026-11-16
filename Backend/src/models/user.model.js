@@ -6,7 +6,7 @@ export const getUserByEmail = async (email) => {
     const result = await pool.request()
         .input("email", email)
         .query(`
-            SELECT id, name, email, password
+            SELECT id, name, email, password, company_id
             FROM users
             WHERE email = @email
         `);

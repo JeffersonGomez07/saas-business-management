@@ -4,9 +4,9 @@ export const obtenerNotificaciones = async (req,res)=>{
 
     try{
 
-        const {userId}=req.params;
+        const userId = req.user.id;
 
-        const data = await notificacionesService.obtenerNotificaciones(userId);
+        const data = await notificacionesService.obtenerNotificaciones(userId, req.user.companyId);
 
         res.json(data);
 
@@ -25,7 +25,8 @@ export const obtenerNotificaciones = async (req,res)=>{
 export const obtenerNoLeidas = async (req, res) => {
   try {
     const notificaciones = await notificacionesService.obtenerNoLeidas(
-      req.params.userId
+      req.user.id,
+      req.user.companyId
     );
 
     res.json(notificaciones);
@@ -43,7 +44,8 @@ export const obtenerNoLeidas = async (req, res) => {
 export const obtenerResumen = async (req, res) => {
   try {
     const resumen = await notificacionesService.obtenerResumen(
-      req.params.userId
+      req.user.id,
+      req.user.companyId
     );
 
     res.json(resumen);
@@ -62,7 +64,7 @@ export const crearNotificacion = async (req, res) => {
   try {
 
     const notificacion = await notificacionesService.crearNotificacion(
-      req.body
+      { ...req.body, userId: req.user.id, companyId: req.user.companyId }
     );
 
     res.status(201).json(notificacion);
@@ -82,7 +84,9 @@ export const marcarComoLeida = async (req, res) => {
   try {
 
     const resultado = await notificacionesService.marcarComoLeida(
-      req.params.id
+      req.params.id,
+      req.user.id,
+      req.user.companyId
     );
 
     res.json(resultado);
@@ -102,7 +106,8 @@ export const marcarTodasComoLeidas = async (req, res) => {
   try {
 
     const resultado = await notificacionesService.marcarTodasComoLeidas(
-      req.params.userId
+      req.user.id,
+      req.user.companyId
     );
 
     res.json(resultado);
@@ -122,7 +127,9 @@ export const eliminarNotificacion = async (req, res) => {
   try {
 
     const resultado = await notificacionesService.eliminarNotificacion(
-      req.params.id
+      req.params.id,
+      req.user.id,
+      req.user.companyId
     );
 
     res.json(resultado);
@@ -142,7 +149,8 @@ export const limpiarNotificaciones = async (req, res) => {
   try {
 
     const resultado = await notificacionesService.limpiarNotificaciones(
-      req.params.userId
+      req.user.id,
+      req.user.companyId
     );
 
     res.json(resultado);
@@ -162,7 +170,8 @@ export const obtenerCantidadNoLeidas = async (req, res) => {
   try {
 
     const cantidad = await notificacionesService.obtenerCantidadNoLeidas(
-      req.params.userId
+      req.user.id,
+      req.user.companyId
     );
 
     res.json(cantidad);

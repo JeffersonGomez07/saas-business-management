@@ -4,6 +4,7 @@ import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "../
 import {LineChart, Line, BarChart, Bar, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer} from "recharts";
 import { Download, Calendar, TrendingUp, DollarSign } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
+import api, { apiFetch } from "../service/api";
 
 type reporteTotal = {
   Ingresos : number;
@@ -78,19 +79,19 @@ export default function Reportes() {
 
     const { desde, hasta } = obtenerRangoFechas();
 
-    const reporteResponse = await fetch(
+    const reporteResponse = await apiFetch(
       `http://localhost:4000/api/reportes/reportes?desde=${desde}&hasta=${hasta}`
     );
 
-    const financiero = await fetch(
+    const financiero = await apiFetch(
       `http://localhost:4000/api/reportes/analisis-financiero?desde=${desde}&hasta=${hasta}`
     );
 
-    const categorias = await fetch(
+    const categorias = await apiFetch(
       `http://localhost:4000/api/reportes/ventas-por-categoria?desde=${desde}&hasta=${hasta}`
     );
 
-    const productos = await fetch(
+    const productos = await apiFetch(
       `http://localhost:4000/api/reportes/top-productos?desde=${desde}&hasta=${hasta}`
     );
 
@@ -118,14 +119,24 @@ export default function Reportes() {
 
 },[filtro, obtenerRangoFechas]);
 
-const exportarPDF = () => {
+const exportarPDF = async () => {
 
   const { desde, hasta } = obtenerRangoFechas();
 
-  window.open(
-    `http://localhost:4000/api/reportes/pdf?desde=${desde}&hasta=${hasta}`,
-    "_blank"
-  );
+  try {
+    const response = await api.get("/api/reportes/pdf", {
+      params: { desde, hasta },
+      responseType: "blob",
+    });
+    const url = URL.createObjectURL(response.data);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "reporte.pdf";
+    link.click();
+    window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+  } catch (error) {
+    console.error("Error exportando el reporte:", error);
+  }
 
 };
 

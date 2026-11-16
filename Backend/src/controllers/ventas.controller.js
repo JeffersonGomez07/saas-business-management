@@ -2,7 +2,7 @@ import * as ventasService from "../services/ventas.service.js"
 
 export const ventas = async (req, res) => {
   try{
-    const ventasResult = await ventasService.ventas();
+    const ventasResult = await ventasService.ventas(req.user.companyId);
     res.json(ventasResult);
 
   }catch(error){
@@ -15,7 +15,7 @@ export const ventas = async (req, res) => {
 
 export const listadoVentas = async (req, res) => {
   try{
-    const listadoVentasResult = await ventasService.listadoVentas();
+    const listadoVentasResult = await ventasService.listadoVentas(req.user.companyId);
     res.json(listadoVentasResult);
 
   }catch(error){
@@ -28,7 +28,7 @@ export const listadoVentas = async (req, res) => {
 
 export const registrarVenta = async (req, res) => {
   try{
-    const registraVentaResult = await ventasService.registrarVenta();
+    const registraVentaResult = await ventasService.registrarVenta(req.body, req.user.companyId);
     res.json(registraVentaResult);
 
   }catch(error){
@@ -41,7 +41,7 @@ export const registrarVenta = async (req, res) => {
 
 export const obtenerClientes = async (req, res) => {
   try{
-    const clientes = await ventasService.obtenerClientes();
+    const clientes = await ventasService.obtenerClientes(req.user.companyId);
     res.json(clientes);
 
   }catch(error){
@@ -54,7 +54,7 @@ export const obtenerClientes = async (req, res) => {
 
 export const obtenerProductos = async (req, res) => {
   try{
-    const obtenerProductosResult = await ventasService.obtenerProductos();
+    const obtenerProductosResult = await ventasService.obtenerProductos(req.user.companyId);
     res.json(obtenerProductosResult);
 
   }catch(error){

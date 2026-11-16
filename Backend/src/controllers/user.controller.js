@@ -2,7 +2,7 @@ import * as userService from "../services/user.service.js"
 
 export const obtenerUsuario = async (req, res) => {
   try{
-    const obtenerUsuarioResult = await userService.obtenerUsuario();
+    const obtenerUsuarioResult = await userService.obtenerUsuario(req.user.id);
     res.json(obtenerUsuarioResult);
 
   }catch(error){

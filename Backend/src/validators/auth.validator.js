@@ -21,9 +21,9 @@ export const validarRegistro = (req, res, next) => {
     const { name, company_name, email, password } = req.body;
 
 
-    if (!name || !email || !password) {
+    if (!name || !company_name || !email || !password) {
         return res.status(400).json({
-            message: "Nombre, email y contraseña son obligatorios"
+            message: "Nombre, empresa, email y contraseña son obligatorios"
         });
     }
 

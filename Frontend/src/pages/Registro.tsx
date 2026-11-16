@@ -34,7 +34,7 @@ function Register() {
   }
 
   try {
-    const res = await api.post("/register", {
+    const res = await api.post("/api/auth/register", {
       name: form.name,
       company_name: form.company_name,
       email: form.email,

@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
 import {LineChart,Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, } from "recharts";
 
 import {ShoppingCart, Package, Users, DollarSignIcon, } from "lucide-react";
+import { apiFetch } from "../service/api";
 
 type ResumenDashboard = {
   totalVentas: number;
@@ -42,7 +43,7 @@ export default function Dashboard() {
   useEffect(() => {
     const obtenerResumen = async () => {
       try {
-        const res = await fetch("http://localhost:4000/api/dashboard/resumen");
+        const res = await apiFetch("http://localhost:4000/api/dashboard/resumen");
 
         if (!res.ok) {
           throw new Error("Error al obtener el resumen");
@@ -63,7 +64,7 @@ export default function Dashboard() {
   useEffect(() => {
     const obtenerVentasMensuales = async () => {
       try {
-        const res = await fetch("http://localhost:4000/api/dashboard/ventas-mensuales");
+        const res = await apiFetch("http://localhost:4000/api/dashboard/ventas-mensuales");
 
         if (!res.ok) {
           throw new Error("Error al obtener las ventas mensuales");
@@ -84,7 +85,7 @@ export default function Dashboard() {
   useEffect (() => {
     const obtenerVentasPorCategoria = async () => {
       try {
-        const res = await fetch("http://localhost:4000/api/dashboard/ventas-categorias");
+        const res = await apiFetch("http://localhost:4000/api/dashboard/ventas-categorias");
 
         if (!res.ok) {
           throw new Error("Error al obtener las ventas por categoría");
@@ -104,7 +105,7 @@ export default function Dashboard() {
   useEffect (() => {
     const obtenerDistribucionProductos = async () => {
       try {
-        const res = await fetch("http://localhost:4000/api/dashboard/distribucion-productos");
+        const res = await apiFetch("http://localhost:4000/api/dashboard/distribucion-productos");
 
         if (!res.ok) {
           throw new Error("Error al obtener la distribución de productos");
@@ -126,7 +127,7 @@ export default function Dashboard() {
   useEffect (() => { 
     const obtenerVentasRecientes = async () => {
       try {
-        const res = await fetch("http://localhost:4000/api/dashboard/ventas-recientes");
+        const res = await apiFetch("http://localhost:4000/api/dashboard/ventas-recientes");
 
         if (!res.ok) {
           throw new Error("Error al obtener las ventas recientes");
