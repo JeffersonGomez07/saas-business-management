@@ -15,6 +15,7 @@ function Register() {
     name: "",
     email: "",
     company_name: "",
+    inviteCode: "",
     password: "",
     confirmPassword: "",
     aceptaTerminos: false,
@@ -36,7 +37,8 @@ function Register() {
   try {
     const res = await api.post("/api/auth/register", {
       name: form.name,
-      company_name: form.company_name,
+      company_name: form.inviteCode.trim() ? undefined : form.company_name,
+      inviteCode: form.inviteCode.trim() || undefined,
       email: form.email,
       password: form.password
     });
@@ -89,7 +91,7 @@ function Register() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="empresa">Nombre de tu Empresa *</Label>
+              <Label htmlFor="empresa">Nombre de tu Empresa {!form.inviteCode.trim() && "*"}</Label>
               <div className="relative">
                 <Building className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                 <Input
@@ -101,10 +103,27 @@ function Register() {
                   setForm({ ...form, company_name: e.target.value })
                   }
                   className="pl-10"
-                  required
+                  required={!form.inviteCode.trim()}
                 />
               </div>
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="codigoInvitacion">Código de invitación (opcional)</Label>
+            <Input
+              id="codigoInvitacion"
+              type="text"
+              autoComplete="off"
+              placeholder="Pega el código que te compartieron"
+              value={form.inviteCode}
+              onChange={(e) =>
+                setForm({ ...form, inviteCode: e.target.value })
+              }
+            />
+            <p className="text-sm text-slate-500">
+              El código debe corresponder al correo que registres y solo puede usarse una vez.
+            </p>
           </div>
 
           <div className="space-y-2">

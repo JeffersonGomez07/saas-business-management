@@ -9,6 +9,7 @@ A full-stack SaaS application for business management built with React, TypeScri
 - User login
 - JWT authentication
 - Protected routes
+- Company roles and email-bound, single-use invitations
 
 ### Dashboard
 - Business metrics
@@ -209,14 +210,15 @@ If a credential was previously committed, rotate it; ignoring `.env` does not re
 
 The application uses Microsoft SQL Server. For a new installation, run `Script/schema.sql`. To upgrade an existing installation, first back up the database and run `Script/migrate-multiempresa.sql`.
 
-The migration creates a separate company for each existing user to avoid merging accounts based on possibly duplicated `company_name` values. If multiple users should share a tenant, review and reassign their `company_id` values explicitly. The first run creates `dbo.LegacyCompanyAssignments` and the nullable columns, then stops safely if ownership mappings are missing. Add one mapping for every existing `Categorias`, `Clientes`, `Proveedores`, `Productos` and `Ventas` row using its table name, primary-key ID and confirmed company ID; rerun the script to apply the assignments transactionally. It derives sale details from their sale and notifications from their user, verifies every row, and adds tenant-consistent foreign keys. Use the final ownership-count query to audit the result. Never infer ownership without confirmation. For example, after confirming the owner, add a mapping with `INSERT dbo.LegacyCompanyAssignments (entity_name, record_id, company_id) VALUES ('Clientes', 42, 1);`.
+The migration never creates or joins companies based on `company_name`. Before its first successful run, create each intended company in `dbo.companies` and populate `dbo.LegacyCompanyAssignments` with an explicit mapping for every existing user (`entity_name = 'users'`) and each `Categorias`, `Clientes`, `Proveedores`, `Productos` and `Ventas` row. Set each user mapping's `company_role` to `owner`, `admin`, or `member`; every company with users must have at least one owner. Leave `company_role` NULL for business-data mappings. Multiple users may map to the same `company_id` only when you have confirmed they belong to the same business. The migration derives sale details from their sale and notifications from their user, verifies all records, and applies the assignments and tenant-consistent foreign keys in one transaction. If a mapping is missing or related records belong to different companies, it rolls back. If you already ran an earlier version of this migration, fill `company_role` on every existing user assignment before rerunning this update. The migration-state marker allows safe reruns after new users sign up. Use the final ownership-count query to audit the result. Example: `INSERT dbo.LegacyCompanyAssignments (entity_name, record_id, company_id, company_role) VALUES ('users', 7, 3, 'owner'); INSERT dbo.LegacyCompanyAssignments (entity_name, record_id, company_id) VALUES ('Clientes', 42, 3);`.
 
-New registrations create a company, a default `General` category, and user preferences. Each private API request requires a valid bearer JWT; company and user identity are taken from the verified token.
+New registrations without an invitation create a company, a default `General` category, and user preferences, and the registering user becomes its owner. Owners and admins can issue invitations from Configuración. Each invitation is stored as a hash, bound to one email, expires after seven days, and can be used once; signup with a valid code joins the inviter's company as a member without creating another company. Existing users may share a company only through the confirmed migration mappings. Each private API request requires a valid bearer JWT; company and user identity are taken from the verified token.
 
-Backend tests: run `npm test` from `Backend`. The SQL integration test is skipped unless `RUN_SQL_INTEGRATION_TESTS=1` and `DB_DATABASE=SaaS_Test`; restore or create that disposable database with the application schema first. The integration test exercises registration/login, customers, inventory, sales, reports, and cross-company access, then removes only the two companies and records it created.
+Backend tests: run `npm test` from `Backend`. The SQL integration test is skipped unless `RUN_SQL_INTEGRATION_TESTS=1` and `DB_DATABASE=SaaS_Test`; restore or create that disposable database with the application schema first. The integration test exercises registration/login, invitation acceptance and authorization, customers, inventory, sales, reports, and cross-company access, then removes only the companies and records it created.
 
 Main entities include:
 
+- Companies and company invitations
 - Users
 - Products
 - Categories

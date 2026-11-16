@@ -11,6 +11,7 @@ export const obtenerPerfil = async (id) => {
           id,
           name,
           company_name,
+          company_role,
           email,
           telefono,
           direccion,

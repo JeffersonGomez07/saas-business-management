@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs"
 import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/avatar";
 import { Switch } from "../components/ui/switch";
 import { Separator } from "../components/ui/separator";
-import { User, Mail, Phone, Building, MapPin, Lock, Bell, Save } from "lucide-react";
+import { User, Mail, Phone, Building, MapPin, Lock, Bell, Save, UserPlus, Copy } from "lucide-react";
 import { toast } from "sonner";
 import api from "../service/api";
 
@@ -16,6 +16,7 @@ type Perfil = {
   name : string;
   company_name : string;
   email : string;
+  company_role: "owner" | "admin" | "member";
   telefono : string;
   direccion: string;
   fotoPerfil: string | null;
@@ -31,6 +32,8 @@ export default function Configuracion() {
     clientes: true,
   });
   const [infoPerfil, setInfoPerfil] = useState<Perfil| null>(null);
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [invitation, setInvitation] = useState<{ code: string; email: string; expiresAt: string } | null>(null);
   useEffect(() => {
       const informacionPerfil = async () => {
       try {
@@ -152,6 +155,28 @@ const guardarPreferencias = async () => {
   }
 };
 
+const crearInvitacion = async () => {
+  try {
+    const response = await api.post("/api/companies/invitations", { email: inviteEmail });
+    setInvitation(response.data);
+    toast.success("Invitación creada. Comparte el código con esa persona.");
+  } catch (error) {
+    console.error(error);
+    toast.error("No se pudo crear la invitación. Verifica el correo y tus permisos.");
+  }
+};
+
+const copiarCodigo = async () => {
+  if (!invitation) return;
+  try {
+    await navigator.clipboard.writeText(invitation.code);
+    toast.success("Código copiado");
+  } catch (error) {
+    console.error(error);
+    toast.error("No se pudo copiar el código");
+  }
+};
+
 
   return (
     <div className="space-y-6">
@@ -161,6 +186,46 @@ const guardarPreferencias = async () => {
           Administra tu perfil y preferencias del sistema
         </p>
       </div>
+
+      {(infoPerfil?.company_role === "owner" || infoPerfil?.company_role === "admin") && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Invitar a un miembro</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-slate-600">
+              El código es de un solo uso, vence en 7 días y solo sirve para el correo indicado.
+            </p>
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <Input
+                type="email"
+                placeholder="correo@empresa.com"
+                value={inviteEmail}
+                onChange={(event) => setInviteEmail(event.target.value)}
+                aria-label="Correo de la persona invitada"
+              />
+              <Button onClick={crearInvitacion} disabled={!inviteEmail.trim()}>
+                <UserPlus className="w-4 h-4 mr-2" />
+                Crear invitación
+              </Button>
+            </div>
+            {invitation && (
+              <div className="space-y-2 rounded-lg border p-4">
+                <Label htmlFor="codigoGenerado">Código para {invitation.email}</Label>
+                <div className="flex gap-2">
+                  <Input id="codigoGenerado" readOnly value={invitation.code} />
+                  <Button type="button" variant="outline" onClick={copiarCodigo} aria-label="Copiar código">
+                    <Copy className="w-4 h-4" />
+                  </Button>
+                </div>
+                <p className="text-sm text-slate-500">
+                  Expira: {new Date(invitation.expiresAt).toLocaleString()}
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       <Tabs defaultValue="perfil" className="space-y-6">
         <TabsList>

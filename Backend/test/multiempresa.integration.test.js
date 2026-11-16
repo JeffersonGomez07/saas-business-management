@@ -9,11 +9,12 @@ test(
   "registration, login, customers, inventory, sales and reports stay tenant-isolated",
   { skip: !enabled || process.env.DB_DATABASE !== testDatabase },
   async (t) => {
-    const [{ default: pool }, sqlModule, jwt, auth, customers, inventory, sales, reports] = await Promise.all([
+    const [{ default: pool }, sqlModule, jwt, auth, invitations, customers, inventory, sales, reports] = await Promise.all([
       import("../src/config/db.js"),
       import("mssql"),
       import("jsonwebtoken"),
       import("../src/services/auth.service.js"),
+      import("../src/services/invitaciones.service.js"),
       import("../src/services/clientes.service.js"),
       import("../src/services/inventario.service.js"),
       import("../src/services/ventas.service.js"),
@@ -30,6 +31,7 @@ test(
           await new sql.Request(transaction)
             .input("companyId", sql.Int, companyId)
             .query(`
+              DELETE FROM CompanyInvitations WHERE company_id=@companyId;
               DELETE FROM DetalleVenta WHERE company_id=@companyId;
               DELETE FROM Ventas WHERE company_id=@companyId;
               DELETE FROM Productos WHERE company_id=@companyId;
@@ -58,9 +60,10 @@ test(
 
     const suffix = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
     const password = "Integration-test-password-2026";
+    const companyNameA = `Integration A ${suffix}`;
     const tenantA = await auth.register({
       name: "Tenant A",
-      company_name: `Integration A ${suffix}`,
+      company_name: companyNameA,
       email: `tenant-a-${suffix}@example.test`,
       password,
     });
@@ -72,6 +75,57 @@ test(
       password,
     });
     companyIds.push(tenantB.company_id);
+
+    const inviteEmail = `tenant-a-member-${suffix}@example.test`;
+    const invitation = await invitations.crearInvitacion({
+      email: inviteEmail,
+      userId: tenantA.id,
+      companyId: tenantA.company_id,
+    });
+    await assert.rejects(
+      auth.register({
+        name: "Wrong invite email",
+        email: `wrong-email-${suffix}@example.test`,
+        password,
+        inviteCode: invitation.code,
+      }),
+      /inválido|expiró|correo/
+    );
+    const tenantAMember = await auth.register({
+      name: "Tenant A Member",
+      company_name: "Untrusted company name",
+      email: inviteEmail,
+      password,
+      inviteCode: invitation.code,
+    });
+    assert.equal(tenantAMember.company_id, tenantA.company_id);
+    assert.equal(tenantAMember.company_role, "member");
+    const tenantACompany = await pool.request()
+      .input("userId", sql.Int, tenantAMember.id)
+      .query("SELECT company_name FROM users WHERE id=@userId");
+    assert.equal(tenantACompany.recordset[0].company_name, companyNameA);
+    const acceptedInvitation = await pool.request()
+      .input("email", sql.VarChar(150), inviteEmail)
+      .query("SELECT accepted_at FROM CompanyInvitations WHERE email=@email");
+    assert.equal(acceptedInvitation.recordset.length, 1);
+    assert.ok(acceptedInvitation.recordset[0].accepted_at);
+    await assert.rejects(
+      invitations.crearInvitacion({
+        email: `unauthorized-${suffix}@example.test`,
+        userId: tenantAMember.id,
+        companyId: tenantAMember.company_id,
+      }),
+      /Solo propietarios y administradores/
+    );
+    await assert.rejects(
+      auth.register({
+        name: "Reused invitation",
+        email: `reused-${suffix}@example.test`,
+        password,
+        inviteCode: invitation.code,
+      }),
+      /inválido|expiró|correo/
+    );
 
     const loginA = await auth.login({ email: `tenant-a-${suffix}@example.test`, password });
     const loginB = await auth.login({ email: `tenant-b-${suffix}@example.test`, password });

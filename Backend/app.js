@@ -21,6 +21,7 @@ import clientesRoutes from "./src/routes/clientes.routes.js";
 import reportesRoutes from "./src/routes/reportes.routes.js";
 import profileRoutes from "./src/routes/profile.routes.js";
 import notificacionesRoutes from "./src/routes/notificaciones.routes.js"
+import invitacionesRoutes from "./src/routes/invitaciones.routes.js";
 
 if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
     throw new Error("JWT_SECRET debe configurarse con al menos 32 caracteres");
@@ -43,6 +44,7 @@ app.use("/api", clientesRoutes);
 app.use("/api/reportes", reportesRoutes);
 // Registrar las rutas de profiles
 app.use("/api/profile", profileRoutes);
+app.use("/api/companies/invitations", invitacionesRoutes);
 
 app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 

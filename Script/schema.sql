@@ -108,6 +108,7 @@ CREATE TABLE users (
     name VARCHAR(100) NOT NULL,
     company_name VARCHAR(150) NOT NULL,
     company_id INT NOT NULL,
+    company_role VARCHAR(20) NOT NULL,
     email VARCHAR(150) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
     created_at DATETIME DEFAULT GETDATE(),
@@ -116,8 +117,36 @@ CREATE TABLE users (
     fotoPerfil VARCHAR(500),
     updated_at DATETIME,
     CONSTRAINT FK_Users_Companies FOREIGN KEY (company_id) REFERENCES companies(id),
+    CONSTRAINT CK_Users_CompanyRole CHECK (company_role IN ('owner', 'admin', 'member')),
     CONSTRAINT UQ_Users_Company_Id UNIQUE (company_id, id)
 );
+GO
+
+/*==============================================================
+  Tabla: Invitaciones a empresas
+==============================================================*/
+
+CREATE TABLE CompanyInvitations (
+    Id INT IDENTITY(1,1) PRIMARY KEY,
+    company_id INT NOT NULL,
+    email VARCHAR(150) NOT NULL,
+    code_hash VARBINARY(32) NOT NULL,
+    invited_by INT NOT NULL,
+    created_at DATETIME2 NOT NULL DEFAULT GETDATE(),
+    expires_at DATETIME2 NOT NULL,
+    accepted_at DATETIME2 NULL,
+    revoked_at DATETIME2 NULL,
+    CONSTRAINT FK_CompanyInvitations_Companies
+        FOREIGN KEY (company_id) REFERENCES companies(id),
+    CONSTRAINT FK_CompanyInvitations_InvitedBy
+        FOREIGN KEY (company_id, invited_by) REFERENCES users(company_id, id),
+    CONSTRAINT UQ_CompanyInvitations_CodeHash UNIQUE (code_hash)
+);
+GO
+
+CREATE UNIQUE INDEX UQ_CompanyInvitations_PendingEmail
+ON CompanyInvitations(company_id, email)
+WHERE accepted_at IS NULL AND revoked_at IS NULL;
 GO
 
 /*==============================================================
